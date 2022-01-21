@@ -234,7 +234,7 @@ async fn main() {
                             }
                         }
                         swarm.behaviour_mut().list_cmd(kind_opt).await
-                    },
+                    }
                     cmd if cmd.starts_with("magnet:") => {
                         info!(
                             "{}",
