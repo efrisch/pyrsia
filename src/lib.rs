@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-#![allow(mixed_script_confusables)] // This is to allow structs created by a derive macro to have private fields that begin with the grek letter π
+#![allow(mixed_script_confusables)] // This is to allow structs created by a derive macro to have private fields that begin with the Greek letter π
 
 extern crate lazy_static; // Must be done in crate root
 

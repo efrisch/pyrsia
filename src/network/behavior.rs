@@ -92,6 +92,24 @@ impl MyBehaviour {
         }
     }
 
+    pub async fn status_cmd(&mut self) {
+        let server = "ws://localhost:8412/";
+        let pass = "donthackme";
+        match super::torrent::status_cmd(server, pass) {
+            Ok(val) => println!("Status {:?}", val),
+            Err(e) => error!("failed to get status: {:?}", e),
+        }
+    }
+
+    pub async fn list_cmd(&mut self, kind_opt: Option<&str>) {
+        let server = "ws://localhost:8412/";
+        let pass = "donthackme";
+        match super::torrent::list_cmd(server, pass, kind_opt) {
+            Ok(val) => println!("List {:?}", val),
+            Err(e) => error!("failed to get list: {:?}", e),
+        }
+    }
+
     pub fn advertise_blob(&mut self, hash: String, value: Vec<u8>) -> Result<QueryId, Error> {
         let num = std::num::NonZeroUsize::new(2).ok_or(Error::ValueTooLarge)?;
         self.kademlia

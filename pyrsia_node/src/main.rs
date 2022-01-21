@@ -224,6 +224,17 @@ async fn main() {
                 }
                 EventType::Input(line) => match line.as_str() {
                     "peers" => swarm.behaviour_mut().list_peers_cmd().await,
+                    "status" => swarm.behaviour_mut().status_cmd().await,
+                    list_cmd if list_cmd.starts_with("list") => {
+                        let mut kind_opt: Option<&str> = Some("file");
+                        if list_cmd.chars().count() > 5 {
+                            let v = &list_cmd[5..];
+                            if v.chars().count() > 0 {
+                                kind_opt = Some(v);
+                            }
+                        }
+                        swarm.behaviour_mut().list_cmd(kind_opt).await
+                    },
                     cmd if cmd.starts_with("magnet:") => {
                         info!(
                             "{}",
