@@ -4186,7 +4186,7 @@ dependencies = [
 [[package]]
 name = "synapse-rpc"
 version = "0.1.21"
-source = "git+https://github.com/pyrsia/synapse?branch=main#ae7429a1707247bbe7cf9d0b12950d4bb7e112ba"
+source = "git+https://github.com/pyrsia/synapse?branch=main#f1466e151c6624adc200414ebd5e4b37685cdb8d"
 dependencies = [
  "regex",
  "serde",
