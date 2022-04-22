@@ -140,6 +140,8 @@ multiple participants to verify and check the integrity ensuring there is replic
 
 # Prior art
 
+<!-- TODO -->
+
 Discuss prior art, both the good and the bad, in relation to this proposal.
 A few examples of what this can include are:
 
