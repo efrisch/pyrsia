@@ -6,7 +6,7 @@
 # Summary
 
 Pyrsia aims to provide a decentralized network of verified packages accompanied by facts about it's origin and knowledge which can help consumers
-make decisions about the security poster of that specific artifact.
+make decisions about the security poster of that specific package.
 
 # Motivation
 
@@ -15,7 +15,7 @@ These will represent the prevailing winds for the growth of the project.
 
 # Guide-level explanation
 
-Explain the proposal as if it was already included in the language and you were teaching it to another Pyrsia member. That generally means:
+_Explain the proposal as if it was already included in the language and you were teaching it to another Pyrsia member. That generally means:_
 
 
 ## Big Picture
@@ -40,7 +40,7 @@ Some participants will take part in a recording which artifacts exists and write
 - _Explaining how Pyrsia users should *think* about the feature, and how it should impact the way they use Pyrsia. It should explain the impact as concretely as possible._
 
 <!-- Needs work -->
-Package provides should look at Pyrsia as a repository capable of building and hosting their project. Package Consumers should see this as an alternative to the central repositories seamlessly plugging into their existing tools and workflows.
+Package "Providers" should look at Pyrsia as a repository capable of building and hosting their project. Package "Consumers" should see this as an alternative to the central repositories seamlessly plugging into their existing tools and workflows providing confidence in the integrity of what they are downloading and leveraging.
 
 ```mermaid
 graph TD
@@ -56,7 +56,7 @@ graph TD
 
 # Reference-level explanation
 
-This is the technical portion of the RFC. Explain the design in sufficient detail that:
+_This is the technical portion of the RFC. Explain the design in sufficient detail that:_
 
 ## Foundation Components
 
@@ -78,6 +78,7 @@ This is how nodes will record and/or cache the working set of information saved 
 
 - Save artifacts
 - Associate Data to packages
+- Cache information locally
 
 ## Functional Components
 
