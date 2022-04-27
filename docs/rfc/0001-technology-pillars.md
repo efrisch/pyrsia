@@ -5,13 +5,13 @@
 
 # Summary
 
-Pyrsia aims to provide a decentralized network of verified packages accompanied by facts about it's origin and knowledge which can help consumers
-make decisions about the security poster of that specific package.
+Pyrsia aims to provide a decentralized network of verified packages accompanied by facts about their origin and knowledge which can help consumers
+make decisions about the security posture of those specific packages.
 
 # Motivation
 
-This proposal sets out to define the core elements which will be developed that provide the functionality.
-These will represent the prevailing winds for the growth of the project.
+This proposal sets out to define the core elements which will be developed that provide the package verification functionality.
+These represent prevailing winds for the growth of the project.
 
 # Guide-level explanation
 
@@ -22,9 +22,9 @@ _Explain the proposal as if it was already included in the language and you were
 
 - _Explaining the feature largely in terms of examples._
 
-The "value" of this package network will be the verified input. Each package will be created for a specific source and verified before being recorded
-and distributed over the network for other to leverage. The network participants will work collectively to ensure high-availability and speed.
-Some participants will take part in a recording which artifacts exists and write and immutable history.
+The "value" of this package network will be the verified inputs. Each package will be created for a specific source and verified before being recorded
+and distributed over the network for other to leverage. The network participants will work collectively to ensure transparency, high-availability and speed.
+Some participants will take part in recording which artifacts exists and write and immutable history.
 
 ## Core Components
 
@@ -40,7 +40,7 @@ Some participants will take part in a recording which artifacts exists and write
 - _Explaining how Pyrsia users should *think* about the feature, and how it should impact the way they use Pyrsia. It should explain the impact as concretely as possible._
 
 <!-- Needs work -->
-Package "Providers" should look at Pyrsia as a repository capable of building and hosting their project. Package "Consumers" should see this as an alternative to the central repositories seamlessly plugging into their existing tools and workflows providing confidence in the integrity of what they are downloading and leveraging.
+Package "Providers" should look at Pyrsia as a repository capable of building and hosting their projects. Package "Consumers" should see this as an alternative to the central repositories seamlessly plugging into their existing tools and workflows providing confidence in the integrity of what they are downloading and leveraging.
 
 ```mermaid
 graph TD
@@ -127,7 +127,7 @@ which companies maintain. It takes massive resources, networking and storage, as
 relying on these tools.
 
 This puts the company in control and can sometimes have adverse affect on the community, for example when packages are yanked for political reasons.
-This also allows for service outages occur, these massive centralized instance do experience problems and they often make critical packages unavailable
+This also allows service outages to occur, these massive centralized instances are not without problems. When severe enough those problems can make critical packages unavailable
 for extended periods at time.
 
 Most central repositories are populated by the community, in some cases there are manual steps being take to populate the these packages, this means
@@ -167,3 +167,4 @@ Technologies which will be used to implement each component.
 
 The next steps are to define enough of the components and pick the correct technologies to begin building them.
 There are many gaps in the "glue" that will bind the system together which need to be explored.
+    
