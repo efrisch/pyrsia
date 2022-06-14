@@ -23,7 +23,6 @@ use crate::util::keypair_util;
 
 use futures::channel::mpsc;
 use futures::prelude::*;
-use libp2p::autonat;
 use libp2p::core;
 use libp2p::dns;
 use libp2p::identify;
