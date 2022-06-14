@@ -21,8 +21,10 @@ use crate::network_central::behaviour::PyrsiaNetworkBehaviour;
 use crate::network_central::event_loop::{PyrsiaEvent, PyrsiaEventLoop};
 use crate::util::keypair_util;
 
+use clap::Parser;
 use futures::channel::mpsc;
 use futures::prelude::*;
+use libp2p::autonat;
 use libp2p::core;
 use libp2p::dns;
 use libp2p::kad;
@@ -39,6 +41,19 @@ use libp2p::{identify, identity};
 use std::error::Error;
 use std::iter;
 use std::time::Duration;
+
+#[derive(Debug, clap::Parser)]
+#[clap(name = "libp2p autonat")]
+struct Opt {
+    #[clap(long)]
+    listen_port: Option<u16>,
+
+    #[clap(long)]
+    server_address: libp2p::Multiaddr,
+
+    #[clap(long)]
+    server_peer_id: libp2p::PeerId,
+}
 
 /// Sets up the libp2p [`Swarm`] with the necessary components, doing the following things:
 ///
@@ -110,7 +125,18 @@ pub fn setup_libp2p_swarm(
 ) -> Result<(Client, impl Stream<Item = PyrsiaEvent>, PyrsiaEventLoop), Box<dyn Error>> {
     let local_keypair = keypair_util::load_or_generate_ed25519();
 
-    let (swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
+    let (mut swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
+
+    let opt = Opt::parse();
+    swarm.listen_on(
+        libp2p::Multiaddr::empty()
+            .with(libp2p::multiaddr::Protocol::Ip4(std::net::Ipv4Addr::UNSPECIFIED))
+            .with(libp2p::multiaddr::Protocol::Tcp(opt.listen_port.unwrap_or(0))),
+    )?;
+    swarm
+        .behaviour_mut()
+        .auto_nat
+        .add_server(local_peer_id, Some(opt.server_address));
 
     let (command_sender, command_receiver) = mpsc::channel(32);
     let (event_sender, event_receiver) = mpsc::channel(32);
@@ -166,6 +192,16 @@ fn create_swarm(
         SwarmBuilder::new(
             create_transport(keypair)?,
             PyrsiaNetworkBehaviour {
+                auto_nat: autonat::Behaviour::new(
+                    peer_id,
+                    autonat::Config {
+                        retry_interval: Duration::from_secs(10),
+                        refresh_interval: Duration::from_secs(30),
+                        boot_delay: Duration::from_secs(5),
+                        throttle_server_period: Duration::ZERO,
+                        ..Default::default()
+                    },
+                ),
                 identify: identify::Identify::new(identify_config),
                 relay: Relay::new(
                     peer_id,
