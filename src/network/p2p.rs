@@ -23,6 +23,7 @@ use crate::util::keypair_util;
 
 use futures::channel::mpsc;
 use futures::prelude::*;
+use libp2p::autonat;
 use libp2p::core;
 use libp2p::dns;
 use libp2p::identify;
@@ -38,6 +39,7 @@ use libp2p::yamux;
 use libp2p::Transport;
 use std::error::Error;
 use std::iter;
+use std::time::Duration;
 
 /// Sets up the libp2p [`Swarm`] with the necessary components, doing the following things:
 ///
@@ -52,6 +54,7 @@ use std::iter;
 /// [`PyrsiaNetworkBehaviour`]. The PyrsiaNetworkBehaviour contains the following
 /// components:
 ///
+/// * autonat: a protocol for establishing Network Address Translation function
 /// * Identify: a protocol for exchanging identity information between peers
 /// * Kademlia: a DHT to share information over the libp2p network
 /// * RequestResponse: a generic request/response protocol implementation for
@@ -164,6 +167,16 @@ fn create_swarm(
         SwarmBuilder::new(
             create_transport(keypair)?,
             PyrsiaNetworkBehaviour {
+                auto_nat: autonat::Behaviour::new(
+                    peer_id,
+                    autonat::Config {
+                        retry_interval: Duration::from_secs(10),
+                        refresh_interval: Duration::from_secs(30),
+                        boot_delay: Duration::from_secs(5),
+                        throttle_server_period: Duration::ZERO,
+                        ..Default::default()
+                    },
+                ),
                 identify: identify::Identify::new(identify_config),
                 kademlia: kad::Kademlia::new(
                     peer_id,
