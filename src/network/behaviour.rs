@@ -56,7 +56,7 @@ pub enum PyrsiaNetworkEvent {
 
 impl From<autonat::Event> for PyrsiaNetworkEvent {
     fn from(v: autonat::Event) -> Self {
-        Self::AutoNat(v)
+        PyrsiaNetworkEvent::AutoNat(v)
     }
 }
 
