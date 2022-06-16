@@ -20,8 +20,8 @@ use crate::network::idle_metric_protocol::{IdleMetricExchangeCodec, IdleMetricEx
 use crate::network_central::behaviour::PyrsiaNetworkBehaviour;
 use crate::network_central::event_loop::{PyrsiaEvent, PyrsiaEventLoop};
 use crate::util::keypair_util;
+use crate::cli_commands::config::get_config;
 
-use clap::Parser;
 use futures::channel::mpsc;
 use futures::prelude::*;
 use libp2p::autonat;
@@ -42,18 +42,6 @@ use std::error::Error;
 use std::iter;
 use std::time::Duration;
 
-#[derive(Debug, clap::Parser)]
-#[clap(name = "libp2p autonat")]
-struct Opt {
-    #[clap(long)]
-    listen_port: Option<u16>,
-
-    #[clap(long)]
-    server_address: libp2p::Multiaddr,
-
-    #[clap(long)]
-    server_peer_id: libp2p::PeerId,
-}
 
 /// Sets up the libp2p [`Swarm`] with the necessary components, doing the following things:
 ///
@@ -127,16 +115,17 @@ pub fn setup_libp2p_swarm(
 
     let (mut swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
 
-    let opt = Opt::parse();
+    let address: libp2p::Multiaddr = get_config().unwrap().host.parse().unwrap();
+
     swarm.listen_on(
         libp2p::Multiaddr::empty()
             .with(libp2p::multiaddr::Protocol::Ip4(std::net::Ipv4Addr::UNSPECIFIED))
-            .with(libp2p::multiaddr::Protocol::Tcp(opt.listen_port.unwrap_or(0))),
+            .with(libp2p::multiaddr::Protocol::Tcp(get_config().unwrap().port.parse::<u16>().unwrap())),
     )?;
     swarm
         .behaviour_mut()
         .auto_nat
-        .add_server(local_peer_id, Some(opt.server_address));
+        .add_server(local_peer_id, Some(address));
 
     let (command_sender, command_receiver) = mpsc::channel(32);
     let (event_sender, event_receiver) = mpsc::channel(32);
