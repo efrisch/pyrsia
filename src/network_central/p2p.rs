@@ -14,13 +14,13 @@
    limitations under the License.
 */
 
+use crate::cli_commands::config::get_config;
 use crate::network::artifact_protocol::{ArtifactExchangeCodec, ArtifactExchangeProtocol};
 use crate::network::client::Client;
 use crate::network::idle_metric_protocol::{IdleMetricExchangeCodec, IdleMetricExchangeProtocol};
 use crate::network_central::behaviour::PyrsiaNetworkBehaviour;
 use crate::network_central::event_loop::{PyrsiaEvent, PyrsiaEventLoop};
 use crate::util::keypair_util;
-use crate::cli_commands::config::get_config;
 
 use futures::channel::mpsc;
 use futures::prelude::*;
@@ -41,7 +41,6 @@ use libp2p::{identify, identity};
 use std::error::Error;
 use std::iter;
 use std::time::Duration;
-
 
 /// Sets up the libp2p [`Swarm`] with the necessary components, doing the following things:
 ///
@@ -115,13 +114,15 @@ pub fn setup_libp2p_swarm(
 
     let (mut swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
 
-    let address: libp2p::Multiaddr = get_config().unwrap().host.parse().unwrap();
+    let address: libp2p::Multiaddr = libp2p::Multiaddr::empty()
+        .with(libp2p::multiaddr::Protocol::Ip4(
+            std::net::Ipv4Addr::UNSPECIFIED,
+        ))
+        .with(libp2p::multiaddr::Protocol::Tcp(
+            get_config().unwrap().port.parse::<u16>().unwrap(),
+        ));
 
-    swarm.listen_on(
-        libp2p::Multiaddr::empty()
-            .with(libp2p::multiaddr::Protocol::Ip4(std::net::Ipv4Addr::UNSPECIFIED))
-            .with(libp2p::multiaddr::Protocol::Tcp(get_config().unwrap().port.parse::<u16>().unwrap())),
-    )?;
+    swarm.listen_on(address.clone())?;
     swarm
         .behaviour_mut()
         .auto_nat
