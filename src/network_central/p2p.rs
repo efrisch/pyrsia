@@ -113,13 +113,14 @@ pub fn setup_libp2p_swarm(
     let local_keypair = keypair_util::load_or_generate_ed25519();
 
     let (mut swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
+    let config = get_config().unwrap();
 
     let address: libp2p::Multiaddr = libp2p::Multiaddr::empty()
         .with(libp2p::multiaddr::Protocol::Ip4(
             std::net::Ipv4Addr::UNSPECIFIED,
         ))
         .with(libp2p::multiaddr::Protocol::Tcp(
-            get_config().unwrap().port.parse::<u16>().unwrap(),
+            config.port.parse::<u16>().unwrap(),
         ));
 
     swarm.listen_on(address.clone())?;
