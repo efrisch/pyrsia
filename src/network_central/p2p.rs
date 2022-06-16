@@ -14,7 +14,7 @@
    limitations under the License.
 */
 
-use crate::cli_commands::config::get_config;
+use crate::cli_commands::config::{get_config, CliConfig};
 use crate::network::artifact_protocol::{ArtifactExchangeCodec, ArtifactExchangeProtocol};
 use crate::network::client::Client;
 use crate::network::idle_metric_protocol::{IdleMetricExchangeCodec, IdleMetricExchangeProtocol};
@@ -113,7 +113,7 @@ pub fn setup_libp2p_swarm(
     let local_keypair = keypair_util::load_or_generate_ed25519();
 
     let (mut swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
-    let config = get_config().unwrap();
+    let config: CliConfig = get_config().unwrap();
 
     let address: libp2p::Multiaddr = libp2p::Multiaddr::empty()
         .with(libp2p::multiaddr::Protocol::Ip4(
