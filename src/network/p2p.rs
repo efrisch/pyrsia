@@ -23,21 +23,14 @@ use crate::util::keypair_util;
 
 use futures::channel::mpsc;
 use futures::prelude::*;
-use libp2p::core;
-use libp2p::dns;
-use libp2p::identify;
-use libp2p::identity;
-use libp2p::kad;
 use libp2p::kad::record::store::{MemoryStore, MemoryStoreConfig};
-use libp2p::mplex;
-use libp2p::noise;
 use libp2p::request_response::{ProtocolSupport, RequestResponse};
 use libp2p::swarm::{Swarm, SwarmBuilder};
-use libp2p::tcp;
-use libp2p::yamux;
 use libp2p::Transport;
+use libp2p::{autonat, core, dns, identify, identity, kad, mplex, noise, tcp, yamux};
 use std::error::Error;
 use std::iter;
+use std::time::Duration;
 
 /// Sets up the libp2p [`Swarm`] with the necessary components, doing the following things:
 ///
@@ -164,6 +157,16 @@ fn create_swarm(
         SwarmBuilder::new(
             create_transport(keypair)?,
             PyrsiaNetworkBehaviour {
+                auto_nat: autonat::Behaviour::new(
+                    peer_id,
+                    autonat::Config {
+                        retry_interval: Duration::from_secs(10),
+                        refresh_interval: Duration::from_secs(30),
+                        boot_delay: Duration::from_secs(5),
+                        throttle_server_period: Duration::ZERO,
+                        ..Default::default()
+                    },
+                ),
                 identify: identify::Identify::new(identify_config),
                 kademlia: kad::Kademlia::new(
                     peer_id,
