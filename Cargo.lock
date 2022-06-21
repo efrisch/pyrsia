@@ -3333,6 +3333,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "libp2p",
+ "libp2p-autonat",
  "log",
  "maplit",
  "multihash",
