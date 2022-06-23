@@ -14,6 +14,7 @@
    limitations under the License.
 */
 
+use crate::cli_commands::config::{get_config, CliConfig};
 use crate::network::artifact_protocol::{ArtifactExchangeCodec, ArtifactExchangeProtocol};
 use crate::network::behaviour::PyrsiaNetworkBehaviour;
 use crate::network::client::Client;
@@ -101,7 +102,22 @@ pub fn setup_libp2p_swarm(
 ) -> Result<(Client, impl Stream<Item = PyrsiaEvent>, PyrsiaEventLoop), Box<dyn Error>> {
     let local_keypair = keypair_util::load_or_generate_ed25519();
 
-    let (swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
+    let (mut swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
+    let config: CliConfig = get_config().unwrap();
+
+    let address: libp2p::Multiaddr = libp2p::Multiaddr::empty()
+        .with(libp2p::multiaddr::Protocol::Ip4(
+            std::net::Ipv4Addr::UNSPECIFIED,
+        ))
+        .with(libp2p::multiaddr::Protocol::Tcp(
+            config.p2p_port.parse::<u16>().unwrap_or(44000),
+        ));
+
+    swarm.listen_on(address.clone())?;
+    swarm
+        .behaviour_mut()
+        .auto_nat
+        .add_server(local_peer_id, Some(address));
 
     let (command_sender, command_receiver) = mpsc::channel(32);
     let (event_sender, event_receiver) = mpsc::channel(32);

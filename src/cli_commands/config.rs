@@ -24,6 +24,7 @@ const CONF_FILE: &str = "pyrsia-cli";
 pub struct CliConfig {
     pub host: String,
     pub port: String,
+    pub p2p_port: String,
     pub disk_allocated: String,
 }
 
@@ -32,6 +33,7 @@ impl Default for CliConfig {
         CliConfig {
             host: "localhost".to_string(),
             port: "7888".to_string(),
+            p2p_port: "44000".to_string(),
             disk_allocated: "5.84 GB".to_string(),
         }
     }
