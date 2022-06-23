@@ -110,7 +110,7 @@ pub fn setup_libp2p_swarm(
             std::net::Ipv4Addr::UNSPECIFIED,
         ))
         .with(libp2p::multiaddr::Protocol::Tcp(
-            config.p2p_port.parse::<u16>().unwrap_or(44000),
+            config.p2p_port.parse::<u16>().unwrap_or(44120),
         ));
 
     swarm.listen_on(address.clone())?;

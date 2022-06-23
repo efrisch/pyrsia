@@ -33,7 +33,7 @@ impl Default for CliConfig {
         CliConfig {
             host: "localhost".to_string(),
             port: "7888".to_string(),
-            p2p_port: "44000".to_string(),
+            p2p_port: "44120".to_string(),
             disk_allocated: "5.84 GB".to_string(),
         }
     }
@@ -58,6 +58,10 @@ pub fn add_config(new_cfg: CliConfig) -> Result<()> {
     // need more validation for checking units
     if !new_cfg.disk_allocated.is_empty() {
         cfg.disk_allocated = new_cfg.disk_allocated
+    }
+
+    if !new_cfg.p2p_port.is_empty() {
+        cfg.p2p_port = new_cfg.p2p_port
     }
 
     confy::store(CONF_FILE, &cfg)?;
