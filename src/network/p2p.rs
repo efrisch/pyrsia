@@ -24,11 +24,12 @@ use crate::util::keypair_util;
 
 use futures::channel::mpsc;
 use futures::prelude::*;
+
 use libp2p::kad::record::store::{MemoryStore, MemoryStoreConfig};
 use libp2p::request_response::{ProtocolSupport, RequestResponse};
 use libp2p::swarm::{Swarm, SwarmBuilder};
 use libp2p::Transport;
-use libp2p::{autonat, core, dns, identify, identity, kad, mplex, noise, tcp, yamux};
+use libp2p::{autonat, core, dns, identity, kad, mplex, noise, tcp, yamux};
 use std::error::Error;
 use std::iter;
 use std::time::Duration;
@@ -161,9 +162,6 @@ fn create_swarm(
 ) -> Result<(Swarm<PyrsiaNetworkBehaviour>, core::PeerId), Box<dyn Error>> {
     let peer_id = keypair.public().to_peer_id();
 
-    let identify_config =
-        identify::IdentifyConfig::new(String::from("ipfs/1.0.0"), keypair.public());
-
     let memory_store_config = MemoryStoreConfig {
         max_provided_keys,
         ..Default::default()
@@ -183,7 +181,6 @@ fn create_swarm(
                         ..Default::default()
                     },
                 ),
-                identify: identify::Identify::new(identify_config),
                 kademlia: kad::Kademlia::new(
                     peer_id,
                     MemoryStore::with_config(peer_id, memory_store_config),
