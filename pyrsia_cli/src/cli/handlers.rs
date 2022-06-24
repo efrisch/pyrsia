@@ -30,6 +30,9 @@ pub fn config_add() {
     println!("Enter port: ");
     new_cfg.port = io::stdin().lock().lines().next().unwrap().unwrap();
 
+    println!("Enter p2p port: ");
+    new_cfg.p2p_port = io::stdin().lock().lines().next().unwrap().unwrap();
+
     println!("Enter disk space to be allocated to pyrsia(Please enter with units ex: 10 GB): ");
     new_cfg.disk_allocated = io::stdin().lock().lines().next().unwrap().unwrap();
 
