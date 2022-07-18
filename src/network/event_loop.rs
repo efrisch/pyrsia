@@ -468,12 +468,9 @@ mod tests {
     use crate::network::idle_metric_protocol::{
         IdleMetricExchangeCodec, IdleMetricExchangeProtocol,
     };
-    use futures::channel::mpsc;
+    use tokio::sync::mpsc;
     use libp2p::{autonat, dns, kad, noise, request_response, tcp};
     use libp2p::core::{Transport, upgrade};
-    use libp2p::core::upgrade;
-    use libp2p::core::Transport;
-    use libp2p::dns;
     use libp2p::identity::Keypair;
     use libp2p::swarm::SwarmBuilder;
     use libp2p::yamux::YamuxConfig;
