@@ -127,7 +127,7 @@ mod tests {
         let mut threads = vec![];
         for i in 0..NETWORK_THREADS {
             threads.push(thread::spawn({
-                let address: String = format_args!("127.0.0.1:3425{i}").to_string();
+                let address: String = format_args!("127.0.0.1:3425{}", i).to_string();
                 let socket = UdpSocket::bind(address).expect("couldn't bind to address");
                 let loading_test = loading.clone();
                 move || {
