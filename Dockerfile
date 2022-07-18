@@ -5,7 +5,8 @@ ENV CARGO_TARGET_DIR=/target
 WORKDIR /src
 RUN apt-get update && apt-get install -y \
     clang \
-    libclang-dev
+    libclang-dev \
+    cmake
 
 FROM builder AS debug
 COPY . .

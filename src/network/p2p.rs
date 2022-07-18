@@ -15,6 +15,7 @@
 */
 
 use crate::cli_commands::config::{get_config, CliConfig};
+use crate::artifact_service::storage::ARTIFACTS_DIR;
 use crate::network::artifact_protocol::{ArtifactExchangeCodec, ArtifactExchangeProtocol};
 use crate::network::behaviour::PyrsiaNetworkBehaviour;
 use crate::network::client::Client;
@@ -25,6 +26,10 @@ use crate::util::keypair_util;
 use futures::channel::mpsc;
 use futures::prelude::*;
 
+use libp2p::core;
+use libp2p::dns;
+use libp2p::identity;
+use libp2p::kad;
 use libp2p::kad::record::store::{MemoryStore, MemoryStoreConfig};
 use libp2p::request_response::{ProtocolSupport, RequestResponse};
 use libp2p::swarm::{Swarm, SwarmBuilder};
@@ -33,6 +38,10 @@ use libp2p::{autonat, core, dns, identity, kad, mplex, noise, tcp, yamux};
 use std::error::Error;
 use std::iter;
 use std::time::Duration;
+use std::path::PathBuf;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::Stream;
 
 /// Sets up the libp2p [`Swarm`] with the necessary components, doing the following things:
 ///
@@ -101,7 +110,8 @@ use std::time::Duration;
 pub fn setup_libp2p_swarm(
     max_provided_keys: usize,
 ) -> Result<(Client, impl Stream<Item = PyrsiaEvent>, PyrsiaEventLoop), Box<dyn Error>> {
-    let local_keypair = keypair_util::load_or_generate_ed25519();
+    let local_keypair =
+        keypair_util::load_or_generate_ed25519(PathBuf::from(ARTIFACTS_DIR.as_str()));
 
     let (mut swarm, local_peer_id) = create_swarm(local_keypair, max_provided_keys)?;
     let config: CliConfig = get_config().unwrap();
@@ -128,7 +138,7 @@ pub fn setup_libp2p_swarm(
             sender: command_sender,
             local_peer_id,
         },
-        event_receiver,
+        ReceiverStream::new(event_receiver),
         PyrsiaEventLoop::new(swarm, command_receiver, event_sender),
     ))
 }
