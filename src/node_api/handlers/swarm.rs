@@ -14,14 +14,54 @@
    limitations under the License.
 */
 
-use super::{get_config, RegistryError, RegistryErrorCode};
+use crate::artifact_service::model::PackageType;
 use crate::artifact_service::service::ArtifactService;
-use crate::node_api::model::cli::Status;
+use crate::build_service::service::BuildService;
+use crate::docker::error_util::RegistryError;
+use crate::node_api::model::cli::{RequestDockerBuild, RequestMavenBuild, Status};
 
 use log::debug;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use warp::{http::StatusCode, Rejection, Reply};
+
+pub async fn handle_build_docker(
+    request_docker_build: RequestDockerBuild,
+    build_service: Arc<Mutex<BuildService>>,
+) -> Result<impl Reply, Rejection> {
+    let build_info = build_service
+        .lock()
+        .await
+        .start_build(PackageType::Docker, request_docker_build.manifest)
+        .await
+        .map_err(RegistryError::from)?;
+
+    let build_info_as_json = serde_json::to_string(&build_info).map_err(RegistryError::from)?;
+
+    Ok(warp::http::response::Builder::new()
+        .header("Content-Type", "application/json")
+        .status(StatusCode::OK)
+        .body(build_info_as_json))
+}
+
+pub async fn handle_build_maven(
+    request_maven_build: RequestMavenBuild,
+    build_service: Arc<Mutex<BuildService>>,
+) -> Result<impl Reply, Rejection> {
+    let build_info = build_service
+        .lock()
+        .await
+        .start_build(PackageType::Maven2, request_maven_build.gav)
+        .await
+        .map_err(RegistryError::from)?;
+
+    let build_info_as_json = serde_json::to_string(&build_info).map_err(RegistryError::from)?;
+
+    Ok(warp::http::response::Builder::new()
+        .header("Content-Type", "application/json")
+        .status(StatusCode::OK)
+        .body(build_info_as_json))
+}
 
 pub async fn handle_get_peers(
     artifact_service: Arc<Mutex<ArtifactService>>,
@@ -54,13 +94,6 @@ pub async fn handle_get_status(
         .list_peers()
         .await
         .map_err(RegistryError::from)?;
-
-    let cli_config = get_config();
-    if cli_config.is_err() {
-        return Err(warp::reject::custom(RegistryError {
-            code: RegistryErrorCode::Unknown(cli_config.err().unwrap().to_string()),
-        }));
-    }
 
     let status = Status {
         peers_count: peers.len(),

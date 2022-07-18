@@ -27,3 +27,4 @@ pub mod node_api;
 pub mod peer_metrics;
 pub mod transparency_log;
 pub mod util;
+pub mod verification_service;

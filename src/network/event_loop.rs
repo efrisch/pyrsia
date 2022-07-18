@@ -16,8 +16,8 @@
 
 use crate::network::artifact_protocol::{ArtifactRequest, ArtifactResponse};
 use crate::network::behaviour::{PyrsiaNetworkBehaviour, PyrsiaNetworkEvent};
+use crate::network::blockchain_protocol::{BlockUpdateRequest, BlockUpdateResponse};
 use crate::network::client::command::Command;
-use crate::network::client::ArtifactType;
 use crate::network::idle_metric_protocol::{IdleMetricRequest, IdleMetricResponse, PeerMetrics};
 use libp2p::core::PeerId;
 use libp2p::futures::StreamExt;
@@ -38,6 +38,8 @@ type PendingListPeersMap = HashMap<QueryId, oneshot::Sender<HashSet<PeerId>>>;
 type PendingStartProvidingMap = HashMap<QueryId, oneshot::Sender<()>>;
 type PendingRequestArtifactMap = HashMap<RequestId, oneshot::Sender<anyhow::Result<Vec<u8>>>>;
 type PendingRequestIdleMetricMap = HashMap<RequestId, oneshot::Sender<anyhow::Result<PeerMetrics>>>;
+type PendingRequestBlockUpdateMap =
+    HashMap<RequestId, oneshot::Sender<anyhow::Result<Option<u64>>>>;
 
 /// The `PyrsiaEventLoop` is responsible for taking care of incoming
 /// events from the libp2p [`Swarm`] itself, the different network
@@ -53,6 +55,7 @@ pub struct PyrsiaEventLoop {
     pending_list_providers: PendingListPeersMap,
     pending_request_artifact: PendingRequestArtifactMap,
     pending_idle_metric_requests: PendingRequestIdleMetricMap,
+    pending_block_update_requests: PendingRequestBlockUpdateMap,
 }
 
 impl PyrsiaEventLoop {
@@ -71,6 +74,7 @@ impl PyrsiaEventLoop {
             pending_list_providers: Default::default(),
             pending_request_artifact: Default::default(),
             pending_idle_metric_requests: Default::default(),
+            pending_block_update_requests: Default::default(),
         }
     }
 
@@ -83,6 +87,7 @@ impl PyrsiaEventLoop {
                     SwarmEvent::Behaviour(PyrsiaNetworkEvent::Kademlia(kademlia_event)) => self.handle_kademlia_event(kademlia_event).await,
                     SwarmEvent::Behaviour(PyrsiaNetworkEvent::RequestResponse(request_response_event)) => self.handle_request_response_event(request_response_event).await,
                     SwarmEvent::Behaviour(PyrsiaNetworkEvent::IdleMetricRequestResponse(request_response_event)) => self.handle_idle_metric_request_response_event(request_response_event).await,
+                    SwarmEvent::Behaviour(PyrsiaNetworkEvent::BlockUpdateRequestResponse(request_response_event)) => self.handle_block_update_request_response_event(request_response_event).await,
                     swarm_event => self.handle_swarm_event(swarm_event).await,
                 },
                 command = self.command_receiver.recv() => match command {
@@ -156,8 +161,7 @@ impl PyrsiaEventLoop {
                 } => {
                     self.event_sender
                         .send(PyrsiaEvent::RequestArtifact {
-                            artifact_type: request.0,
-                            artifact_hash: request.1,
+                            artifact_id: request.0,
                             channel,
                         })
                         .await
@@ -227,6 +231,52 @@ impl PyrsiaEventLoop {
             RequestResponseEvent::ResponseSent { .. } => {}
         }
     }
+
+    // Handles events from the `RequestResponse` for blockchain update exchange network behaviour.
+    async fn handle_block_update_request_response_event(
+        &mut self,
+        event: RequestResponseEvent<BlockUpdateRequest, BlockUpdateResponse>,
+    ) {
+        trace!("Handle RequestResponseEvent: {:?}", event);
+        match event {
+            RequestResponseEvent::Message { message, .. } => match message {
+                RequestResponseMessage::Request {
+                    request,
+                    channel: _,
+                    ..
+                } => {
+                    self.event_sender
+                        .send(PyrsiaEvent::BlockUpdateRequest {
+                            block_ordinal: request.0,
+                            block: request.1,
+                        })
+                        .await
+                        .expect("Event receiver not to be dropped.");
+                }
+                RequestResponseMessage::Response {
+                    request_id,
+                    response: _,
+                } => {
+                    let _ = self
+                        .pending_block_update_requests
+                        .remove(&request_id)
+                        .expect("Request to still be pending.");
+                }
+            },
+            RequestResponseEvent::InboundFailure { .. } => {}
+            RequestResponseEvent::OutboundFailure {
+                request_id, error, ..
+            } => {
+                let _ = self
+                    .pending_block_update_requests
+                    .remove(&request_id)
+                    .expect("Request to still be pending.")
+                    .send(Err(From::from(error)));
+            }
+            RequestResponseEvent::ResponseSent { .. } => {}
+        }
+    }
+
     // Handles all other events from the libp2p `Swarm`.
     async fn handle_swarm_event(&mut self, event: SwarmEvent<PyrsiaNetworkEvent, impl Error>) {
         trace!("Handle SwarmEvent: {:?}", event);
@@ -317,35 +367,30 @@ impl PyrsiaEventLoop {
                 self.pending_list_peers.insert(query_id, sender);
             }
             Command::Provide {
-                artifact_type,
-                artifact_hash,
+                artifact_id,
                 sender,
             } => {
-                let kademlia_key = format!("{}|{}", artifact_type, artifact_hash.hash);
                 let query_id = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
-                    .start_providing(kademlia_key.into_bytes().into())
+                    .start_providing(artifact_id.into_bytes().into())
                     .expect("No store error.");
                 self.pending_start_providing.insert(query_id, sender);
             }
             Command::ListProviders {
-                artifact_type,
-                artifact_hash,
+                artifact_id,
                 sender,
             } => {
-                let kademlia_key = format!("{}|{}", artifact_type, artifact_hash.hash);
                 let query_id = self
                     .swarm
                     .behaviour_mut()
                     .kademlia
-                    .get_providers(kademlia_key.into_bytes().into());
+                    .get_providers(artifact_id.into_bytes().into());
                 self.pending_list_providers.insert(query_id, sender);
             }
             Command::RequestArtifact {
-                artifact_type,
-                artifact_hash,
+                artifact_id,
                 peer,
                 sender,
             } => {
@@ -353,7 +398,7 @@ impl PyrsiaEventLoop {
                     .swarm
                     .behaviour_mut()
                     .request_response
-                    .send_request(&peer, ArtifactRequest(artifact_type, artifact_hash.hash));
+                    .send_request(&peer, ArtifactRequest(artifact_id));
                 self.pending_request_artifact.insert(request_id, sender);
             }
             Command::RespondArtifact { artifact, channel } => {
@@ -378,6 +423,21 @@ impl PyrsiaEventLoop {
                     .send_response(channel, IdleMetricResponse(metric))
                     .expect("Connection to peer to be still open.");
             }
+            Command::RequestBlockUpdate {
+                block_ordinal,
+                block,
+                peer,
+                sender,
+            } => {
+                let request_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .block_update_request_response
+                    .send_request(&peer, BlockUpdateRequest(block_ordinal, block));
+                self.pending_block_update_requests
+                    .insert(request_id, sender);
+            }
+            Command::RespondBlockUpdate {} => {}
         }
     }
 }
@@ -385,12 +445,15 @@ impl PyrsiaEventLoop {
 #[derive(Debug)]
 pub enum PyrsiaEvent {
     RequestArtifact {
-        artifact_type: ArtifactType,
-        artifact_hash: String,
+        artifact_id: String,
         channel: ResponseChannel<ArtifactResponse>,
     },
     IdleMetricRequest {
         channel: ResponseChannel<IdleMetricResponse>,
+    },
+    BlockUpdateRequest {
+        block_ordinal: u64,
+        block: Vec<u8>,
     },
 }
 
@@ -398,6 +461,9 @@ pub enum PyrsiaEvent {
 mod tests {
     use super::*;
     use crate::network::artifact_protocol::{ArtifactExchangeCodec, ArtifactExchangeProtocol};
+    use crate::network::blockchain_protocol::{
+        BlockUpdateExchangeCodec, BlockUpdateExchangeProtocol,
+    };
     use crate::network::client::Client;
     use crate::network::idle_metric_protocol::{
         IdleMetricExchangeCodec, IdleMetricExchangeProtocol,
@@ -457,6 +523,14 @@ mod tests {
                 IdleMetricExchangeCodec(),
                 iter::once((
                     IdleMetricExchangeProtocol(),
+                    request_response::ProtocolSupport::Full,
+                )),
+                Default::default(),
+            ),
+            block_update_request_response: request_response::RequestResponse::new(
+                BlockUpdateExchangeCodec(),
+                iter::once((
+                    BlockUpdateExchangeProtocol(),
                     request_response::ProtocolSupport::Full,
                 )),
                 Default::default(),

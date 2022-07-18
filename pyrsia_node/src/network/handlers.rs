@@ -18,11 +18,13 @@ use libp2p::multiaddr::Protocol;
 use libp2p::request_response::ResponseChannel;
 use libp2p::{Multiaddr, PeerId};
 use log::debug;
+
 use pyrsia::artifact_service::service::ArtifactService;
 use pyrsia::network::artifact_protocol::ArtifactResponse;
-use pyrsia::network::client::{ArtifactType, Client};
+use pyrsia::network::client::Client;
 use pyrsia::network::idle_metric_protocol::{IdleMetricResponse, PeerMetrics};
 use pyrsia::peer_metrics;
+use pyrsia_blockchain_network::blockchain::Blockchain;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -38,22 +40,16 @@ pub async fn dial_other_peer(mut p2p_client: Client, to_dial: &Multiaddr) -> any
 }
 
 /// Respond to a RequestArtifact event by getting the artifact
-/// based on the provided artifact type and hash.
+/// based on the provided artifact id.
 pub async fn handle_request_artifact(
     artifact_service: Arc<Mutex<ArtifactService>>,
-    artifact_type: &ArtifactType,
     artifact_id: &str,
     channel: ResponseChannel<ArtifactResponse>,
 ) -> anyhow::Result<()> {
-    debug!(
-        "Handling request artifact: {:?}={:?}",
-        artifact_type, artifact_id
-    );
+    debug!("Handling request artifact: {:?}", artifact_id);
 
     let mut artifact_service = artifact_service.lock().await;
-    let content = match artifact_type {
-        ArtifactType::Artifact => artifact_service.get_artifact_locally(artifact_id)?,
-    };
+    let content = artifact_service.get_artifact_locally(artifact_id).await?;
 
     artifact_service
         .p2p_client
@@ -71,4 +67,19 @@ pub async fn handle_request_idle_metric(
         idle_metric: metric.to_le_bytes(),
     };
     p2p_client.respond_idle_metric(peer_metrics, channel).await
+}
+
+pub async fn handle_request_block_update(
+    mut p2p_client: Client,
+    blockchain: Arc<Mutex<Blockchain>>,
+    block_ordinal: u64,
+    block: Vec<u8>,
+) -> anyhow::Result<()> {
+    debug!(
+        "Handling request blockchain: {:?}={:?}",
+        block_ordinal, block
+    );
+
+    let _ = blockchain; // TODO!
+    p2p_client.respond_block_update().await
 }
