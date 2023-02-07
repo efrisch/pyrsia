@@ -135,6 +135,7 @@ impl ArtifactService {
             build_id, build_result.package_type, package_specific_id
         );
 
+        let mut vec: Vec<Vec<u8>> = Vec::new();
         for artifact in build_result.artifacts.iter() {
             let add_artifact_request = AddArtifactRequest {
                 package_type: build_result.package_type,
@@ -157,19 +158,23 @@ impl ArtifactService {
                 "Transparency Log for build with ID {} successfully created.",
                 build_id
             );
+            vec.push(add_artifact_transparency_log.1);
 
             self.transparency_log_service
-                .write_transparency_log(&add_artifact_transparency_log)?;
+                .write_transparency_log(&add_artifact_transparency_log.0)?;
 
             self.put_artifact_from_build_result(
                 &artifact.artifact_location,
-                &add_artifact_transparency_log.artifact_id,
+                &add_artifact_transparency_log.0.artifact_id,
             )
             .await?;
 
             self.p2p_client
-                .provide(&add_artifact_transparency_log.artifact_id)
+                .provide(&add_artifact_transparency_log.0.artifact_id)
                 .await?;
+        }
+        for v in vec {
+            self.transparency_log_service.broadcast_artifact(v).await?;
         }
 
         Ok(())
@@ -458,13 +463,13 @@ mod tests {
             .unwrap();
         artifact_service
             .transparency_log_service
-            .write_transparency_log(&transparency_log)
+            .write_transparency_log(&transparency_log.0)
             .unwrap();
 
         //put the artifact
         artifact_service
             .put_artifact(
-                &transparency_log.artifact_id,
+                &transparency_log.0.artifact_id,
                 &mut get_file_reader().unwrap(),
             )
             .context("Error from put_artifact")
@@ -540,13 +545,13 @@ mod tests {
             .unwrap();
         artifact_service
             .transparency_log_service
-            .write_transparency_log(&transparency_log)
+            .write_transparency_log(&transparency_log.0)
             .unwrap();
 
         //put the artifact
         artifact_service
             .put_artifact(
-                &transparency_log.artifact_id,
+                &transparency_log.0.artifact_id,
                 &mut get_file_reader().unwrap(),
             )
             .context("Error from put_artifact")
@@ -628,7 +633,7 @@ mod tests {
             .unwrap();
         artifact_service
             .transparency_log_service
-            .write_transparency_log(&transparency_log)
+            .write_transparency_log(&transparency_log.0)
             .unwrap();
 
         let future = {
@@ -723,7 +728,7 @@ mod tests {
             .unwrap();
         artifact_service
             .transparency_log_service
-            .write_transparency_log(&created_transparency_log)
+            .write_transparency_log(&created_transparency_log.0)
             .unwrap();
 
         let transparency_log = artifact_service
@@ -792,7 +797,7 @@ mod tests {
             .unwrap();
         artifact_service
             .transparency_log_service
-            .write_transparency_log(&created_transparency_log)
+            .write_transparency_log(&created_transparency_log.0)
             .unwrap();
 
         let transparency_log = artifact_service
@@ -870,7 +875,7 @@ mod tests {
             .unwrap();
         artifact_service
             .transparency_log_service
-            .write_transparency_log(&transparency_log)
+            .write_transparency_log(&transparency_log.0)
             .unwrap();
 
         let result = artifact_service

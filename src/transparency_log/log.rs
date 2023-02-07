@@ -218,15 +218,26 @@ impl TransparencyLogService {
     pub async fn add_artifact(
         &mut self,
         add_artifact_request: AddArtifactRequest,
-    ) -> Result<TransparencyLog, TransparencyLogError> {
+    ) -> Result<(TransparencyLog, Vec<u8>), TransparencyLogError> {
         let transparency_log = TransparencyLog::from(add_artifact_request);
 
         let payload = serde_json::to_string(&transparency_log)?;
+        /*
         self.blockchain_event_client
             .add_block(payload.into_bytes())
             .await?;
+        */
 
-        Ok(transparency_log)
+        Ok((transparency_log, payload.into_bytes()))
+    }
+
+    pub async fn broadcast_artifact(
+        &mut self,
+        to_send: Vec<u8>,
+    ) -> Result<(), TransparencyLogError> {
+        self.blockchain_event_client.add_block(to_send).await?;
+
+        Ok(())
     }
 
     /// Adds a transparency log with the RemoveArtifact operation.

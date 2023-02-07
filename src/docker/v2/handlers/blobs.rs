@@ -172,12 +172,12 @@ mod tests {
             .unwrap();
         artifact_service
             .transparency_log_service
-            .write_transparency_log(&transparency_log)
+            .write_transparency_log(&transparency_log.0)
             .unwrap();
 
         create_artifact(
             &artifact_service.artifact_storage,
-            &transparency_log.artifact_id,
+            &transparency_log.0.artifact_id,
         )
         .unwrap();
 
